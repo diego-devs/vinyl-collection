@@ -39,3 +39,18 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# allow the documented example
+!.env.example
+
+# local evaluation outputs (may contain photos/results)
+/evaluation/
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# next dev https certificates
+/certificates/

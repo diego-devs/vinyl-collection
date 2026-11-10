@@ -1,26 +1,92 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-paper: #f5efe4;
+  --color-card: #fffaf2;
+  --color-ink: #2a211b;
+  --color-muted: #6f6257;
+  --color-line: #e2d6c4;
+  --color-accent: #9a3b1f;
+  --color-accent-strong: #7d2e17;
+  --color-ok: #2f6b3a;
+  --color-warn: #8a5a00;
+  --color-danger: #a12a2a;
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+/* iOS zooms into inputs smaller than 16px. */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  color: var(--color-ink);
+  touch-action: manipulation;
+  cursor: pointer;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.btn-primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+.btn-primary:active {
+  background: var(--color-accent-strong);
+}
+.btn-danger {
+  color: var(--color-danger);
+}
+.field {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--color-line);
+  background: #fff;
+}
+.label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  margin-bottom: 0.25rem;
+}
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
 }

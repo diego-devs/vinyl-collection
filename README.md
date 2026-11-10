@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Archivo LP
 
-## Getting Started
+PWA personal para inventariar una colección de 2.000–3.000 LP desde el iPhone: fotografiar o importar portadas, recortarlas, guardar los datos localmente y (más adelante) identificarlas con un modelo de visión. Interfaz en español; datos en el dispositivo (IndexedDB).
 
-First, run the development server:
+Especificación: `Prompt_Copilot_Archivo_LP.md`. Avance: `docs/progress.md`.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Requisitos (Windows)
+
+- Node.js 22+ (probado con 26.1) y npm.
+- `npm install`
+- Para E2E: `npx playwright install chromium webkit`
+
+## Uso local
+
+```powershell
+npm run dev          # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Probar en el iPhone
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+La cámara, el almacenamiento persistente y la instalación como PWA requieren HTTPS:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```powershell
+npm run dev:https    # certificado local autofirmado de Next.js
+```
 
-## Learn More
+Abre `https://<IP-del-PC>:3000` desde Safari con el iPhone en la misma Wi-Fi (permite el puerto en el Firewall de Windows y acepta el aviso del certificado). Alternativa: un túnel HTTPS gratuito. Para instalar: Compartir → **Añadir a pantalla de inicio**.
 
-To learn more about Next.js, take a look at the following resources:
+> Las fotos y datos viven en el navegador de ese dispositivo. Safari puede borrar datos de sitios no instalados que no se usan: instala la app, pulsa "Solicitar almacenamiento persistente" en Ajustes y **exporta respaldos con frecuencia**.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Respaldo y recuperación
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Ajustes → **Exportar todo con fotos (.zip)** (también CSV del inventario). Para recuperar: Ajustes → Restaurar → elige el `.zip` → revisa la vista previa → Restaurar. Restaurar dos veces no duplica registros.
 
-## Deploy on Vercel
+## Reconocimiento con IA (opcional)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Por defecto está **desactivado** y todo funciona manualmente. Copia `.env.example` a `.env.local` (ignorado por git):
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `VISION_PROVIDER=mock` — respuestas simuladas para probar el flujo (no es precisión real).
+- `VISION_PROVIDER=gemini` + `GEMINI_API_KEY` — clave de Google AI Studio de un proyecto **sin facturación** (compruébalo en AI Studio). La clave nunca llega al navegador. Hasta tener autenticación (Fase 2) Gemini **no** se expone por HTTP; se prueba con:
+
+```powershell
+npm run vision:probe -- C:\ruta\a\fotos [--detect]
+```
+
+Ver `docs/costs.md` (precios, límites, uso de datos en el nivel gratuito) y `docs/recognition-evaluation.md`.
+
+## Scripts
+
+| Script | Qué hace |
+|---|---|
+| `npm run dev` / `dev:https` | Servidor de desarrollo |
+| `npm run build` / `start` | Compilación y servidor de producción |
+| `npm run typecheck` / `lint` | TypeScript estricto / ESLint |
+| `npm test` | Pruebas unitarias (Vitest) |
+| `npm run test:e2e` | E2E Playwright (Chromium móvil y WebKit iPhone) |
+| `npm run assets` | Regenera iconos y fixtures |
+| `npm run vision:probe` | Prueba del proveedor de visión con fotos locales |
+
+Arquitectura: `docs/architecture.md`.
