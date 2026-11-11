@@ -108,3 +108,56 @@ test("el estado del reconocimiento indica modo simulado", async ({ page }) => {
   await page.goto("/ajustes");
   await expect(page.getByTestId("vision-status")).toContainText(/simulado/i);
 });
+
+// Next keeps visited routes mounted but hidden, so label lookups must skip hidden copies.
+const titleField = (page: Page) => page.getByLabel("Título del álbum").filter({ visible: true });
+
+async function pickPhoto(page: Page, button: string, file: string) {
+  const chooser = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: button, exact: true }).click();
+  await (await chooser).setFiles(file);
+}
+
+test("alta manual con todos los datos e imágenes, y gestión de fotos al editar", async ({ page }) => {
+  await page.goto("/");
+  await clearLocalData(page);
+  await page.goto("/agregar");
+  await page.getByRole("link", { name: /Agregar manualmente/ }).click();
+  await expect(page).toHaveURL(/\/manual/);
+
+  await pickPhoto(page, "+ Contraportada", "tests/fixtures/cover-b.png");
+  await pickPhoto(page, "+ Portada", "tests/fixtures/cover-a.png");
+  await expect(page.getByTestId("manual-photos").locator("li")).toHaveCount(2);
+
+  await page.getByLabel("Título del álbum").fill("Disco Manual");
+  await page.getByLabel("Nombre del crédito 1").fill("Los Manuales");
+  await page.getByText("Datos de esta edición física").click();
+  await page.getByLabel("Sello").fill("Peerless");
+  await page.getByLabel("Número de catálogo").fill("LPS-001");
+  await page.getByRole("button", { name: "Guardar como confirmado" }).click();
+
+  await expect(page).toHaveURL(/\/ejemplar\?id=/);
+  await expect(page.getByRole("heading", { name: "Disco Manual" })).toBeVisible();
+  await expect(page.getByText("Peerless")).toBeVisible();
+  await expect(page.getByText("Fotos (2)")).toBeVisible();
+
+  // Editing: unsaved form changes survive adding a photo; photos can be removed.
+  await page.getByRole("link", { name: "Editar" }).click();
+  await titleField(page).fill("Disco Manual Editado");
+  await pickPhoto(page, "+ Etiqueta", "tests/fixtures/cover-a.png");
+  await expect(page.getByTestId("copy-photos").locator("li")).toHaveCount(3);
+  await expect(titleField(page)).toHaveValue("Disco Manual Editado");
+  page.once("dialog", (d) => d.accept());
+  await page.getByTestId("copy-photos").locator("li").first().getByRole("button", { name: "Quitar" }).click();
+  await expect(page.getByTestId("copy-photos").locator("li")).toHaveCount(2);
+  await page.getByRole("button", { name: "Guardar como confirmado" }).click();
+
+  await expect(page.getByRole("heading", { name: "Disco Manual Editado" })).toBeVisible();
+  await expect(page.getByText("Fotos (2)")).toBeVisible();
+
+  // Returning to manual entry starts with an empty form.
+  await page.getByRole("link", { name: "Agregar", exact: true }).click();
+  await page.getByRole("link", { name: /Agregar manualmente/ }).click();
+  await expect(titleField(page)).toHaveValue("");
+  await expect(page.getByRole("heading", { name: "Imágenes (0)" })).toBeVisible();
+});

@@ -130,6 +130,10 @@ export function AddView() {
         copia de seguridad.
       </p>
 
+      <Link href="/manual" className="btn w-full">
+        Agregar manualmente (escribir datos y subir imágenes)
+      </Link>
+
       {items.length > 0 && (
         <section aria-live="polite" className="rounded-2xl border border-line bg-card p-4">
           <h2 className="font-semibold">

@@ -8,8 +8,12 @@ import {
   addPhotoToCopy,
   countInventory,
   createDraftFromPhoto,
+  createManualCopy,
+  getPhotoMetas,
   listInventory,
+  removePhotoFromCopy,
   saveCopyDetails,
+  setCoverPhoto,
   softDeleteCopy,
   restoreDeletedCopy,
   type CopyFormValues,
@@ -66,6 +70,52 @@ async function seedOne(seed = "a") {
 
 beforeEach(() => {
   freshDb();
+});
+
+describe("manual entry and photo management", () => {
+  it("creates a manual copy without photos, with all details", async () => {
+    const copy = await createManualCopy(values(), "confirmed", []);
+    expect(copy.photoIds).toEqual([]);
+    expect(copy.coverPhotoId).toBeNull();
+    expect(copy.label).toBe("Ariola");
+    const [item] = await listInventory();
+    expect(item.album?.title).toBe("Él");
+    expect(item.copy.reviewStatus).toBe("confirmed");
+  });
+
+  it("uses the first cover photo as the main one", async () => {
+    const back = await photoInput("back", { kind: "back" });
+    const cover = await photoInput("cover", { kind: "cover" });
+    const copy = await createManualCopy(values(), "confirmed", [back, cover]);
+    const metas = await getPhotoMetas(copy.photoIds);
+    expect(metas.map((m) => m.kind)).toEqual(["back", "cover"]);
+    expect(copy.coverPhotoId).toBe(metas[1].id);
+  });
+
+  it("switches the main photo and reassigns it when the cover is removed", async () => {
+    const copy = await createManualCopy(values(), "confirmed", [
+      await photoInput("c", { kind: "cover" }),
+      await photoInput("l", { kind: "label" }),
+    ]);
+    const [coverId, labelId] = copy.photoIds;
+    await setCoverPhoto(copy.id, labelId);
+    expect((await getDb().copies.get(copy.id))!.coverPhotoId).toBe(labelId);
+    await setCoverPhoto(copy.id, coverId);
+    await removePhotoFromCopy(copy.id, coverId);
+    const after = (await getDb().copies.get(copy.id))!;
+    expect(after.photoIds).toEqual([labelId]);
+    expect(after.coverPhotoId).toBe(labelId);
+    expect(await getDb().photos.get(coverId)).toBeUndefined();
+    expect(await getDb().thumbnails.get(coverId)).toBeUndefined();
+  });
+
+  it("keeps a source photo that a crop still depends on", async () => {
+    const { copyId, sourceId, cropId } = await seedOne();
+    await removePhotoFromCopy(copyId, sourceId);
+    const copy = (await getDb().copies.get(copyId))!;
+    expect(copy.photoIds).toEqual([cropId]);
+    expect(await getDb().photos.get(sourceId)).toBeTruthy();
+  });
 });
 
 describe("repository", () => {

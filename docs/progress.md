@@ -1,6 +1,6 @@
 # Progreso
 
-Última actualización: 2026-11-10.
+Última actualización: 2026-11-11.
 
 ## Completado
 
@@ -19,15 +19,20 @@
 - PWA instalable (manifest, iconos).
 - Bytes de imagen guardados como `ArrayBuffer` (fallo de `Blob` en IndexedDB con WebKit).
 
-## Pruebas ejecutadas (2026-11-10)
+### Alta manual y gestión de fotos (2026-11-11)
+- `/manual` (enlace desde Agregar): todos los metadatos y fotos opcionales clasificadas (portada, contraportada, etiqueta), guardado en una sola transacción. La primera "Portada" es la principal.
+- En Editar: añadir fotos de cualquier tipo, elegir la principal y quitar fotos (no se borra una original de la que depende un recorte).
+- Nota: Next 16 (`cacheComponents`) mantiene montadas y ocultas las rutas visitadas; los formularios de alta deben reiniciarse tras guardar.
+
+## Pruebas ejecutadas (2026-11-11)
 
 | Comando | Resultado |
 |---|---|
 | `npx tsc --noEmit` | sin errores |
 | `npx eslint` | sin errores |
-| `npx vitest run` | 45/45 |
+| `npx vitest run` | 49/49 |
 | `npm run build` | OK |
-| `npx playwright test` | 8/8 (4 en chromium-mobile, 4 en webkit-iphone) |
+| `npx playwright test` | 10/10 (5 en chromium-mobile, 5 en webkit-iphone) |
 | `npm run vision:probe -- tests\fixtures` (mock) | OK, omite el archivo que no es imagen |
 
 ## Bloqueos / pendiente de validar

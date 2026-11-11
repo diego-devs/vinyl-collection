@@ -30,22 +30,22 @@ interface Draft {
   investigateValue: boolean;
 }
 
-function toDraft(copy: Copy, album: Album | null): Draft {
+function toDraft(copy: Copy | null, album: Album | null): Draft {
   const langs = album?.languages ?? [];
   return {
-    title: album?.title || copy.provisionalTitle,
+    title: album?.title || copy?.provisionalTitle || "",
     credits: album?.credits.length ? album.credits : [{ name: "", role: "artist" }],
     originalYear: album?.originalYear?.toString() ?? "",
     genres: (album?.genres ?? []).join(", "),
     languages: langs.filter((l) => l !== LANGUAGE_INSTRUMENTAL).join(", "),
     instrumental: langs.includes(LANGUAGE_INSTRUMENTAL),
-    pressingYear: copy.pressingYear?.toString() ?? "",
-    label: copy.label ?? "",
-    catalogNumber: copy.catalogNumber ?? "",
-    country: copy.country ?? "",
-    discCount: copy.discCount?.toString() ?? "",
-    notes: copy.notes,
-    investigateValue: copy.investigateValue,
+    pressingYear: copy?.pressingYear?.toString() ?? "",
+    label: copy?.label ?? "",
+    catalogNumber: copy?.catalogNumber ?? "",
+    country: copy?.country ?? "",
+    discCount: copy?.discCount?.toString() ?? "",
+    notes: copy?.notes ?? "",
+    investigateValue: copy?.investigateValue ?? false,
   };
 }
 
@@ -76,7 +76,7 @@ export function CopyForm({
   onSave,
   onChange,
 }: {
-  copy: Copy;
+  copy: Copy | null;
   album: Album | null;
   busy: boolean;
   onSave: (values: CopyFormValues, status: ReviewStatus) => void;

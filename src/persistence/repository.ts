@@ -202,6 +202,94 @@ export async function addPhotoToCopy(
   return photo;
 }
 
+/** Picks the photo shown in the inventory: prefer a cover, then any non-source photo, then a source. */
+function pickCover(photos: PhotoMeta[]): string | null {
+  return (
+    photos.find((p) => p.kind === "cover")?.id ??
+    photos.find((p) => p.kind !== "source")?.id ??
+    photos[0]?.id ??
+    null
+  );
+}
+
+/**
+ * Manual entry: creates a copy with optional photos (cover, back, label…) and all its details.
+ * Photos and the copy are written in one transaction so nothing is half-saved.
+ */
+export async function createManualCopy(
+  values: CopyFormValues,
+  reviewStatus: ReviewStatus,
+  photos: StorePhotoInput[],
+): Promise<Copy> {
+  const db = getDb();
+  const { collection } = await ensureDefaults();
+  const built: Awaited<ReturnType<typeof buildRecords>>[] = [];
+  for (const p of photos) built.push(await buildRecords(p));
+  const t = now();
+  const copy: Copy = {
+    id: newId(),
+    collectionId: collection.id,
+    albumId: null,
+    provisionalTitle: values.title.trim(),
+    coverPhotoId: pickCover(built.map((b) => b.photo)),
+    photoIds: built.map((b) => b.photo.id),
+    pressingYear: null,
+    label: null,
+    catalogNumber: null,
+    country: null,
+    discCount: null,
+    notes: "",
+    investigateValue: false,
+    reviewStatus: "pendingReview",
+    captureBatchId: null,
+    createdAt: t,
+    updatedAt: t,
+    deletedAt: null,
+  };
+  await db.transaction("rw", [db.photos, db.thumbnails, db.copies, db.settings], async () => {
+    for (const b of built) {
+      await db.photos.add(b.record);
+      await db.thumbnails.add(b.thumbRecord);
+    }
+    await db.copies.add(copy);
+    await markChanged();
+  });
+  return saveCopyDetails(copy.id, values, reviewStatus);
+}
+
+export async function setCoverPhoto(copyId: string, photoId: string): Promise<void> {
+  const db = getDb();
+  await db.transaction("rw", [db.copies, db.settings], async () => {
+    const copy = await db.copies.get(copyId);
+    if (!copy?.photoIds.includes(photoId)) throw new Error("La foto no pertenece a este ejemplar.");
+    await db.copies.update(copyId, { coverPhotoId: photoId, updatedAt: now() });
+    await markChanged();
+  });
+}
+
+/**
+ * Removes a photo from a copy. The image is deleted only if no other copy uses it
+ * and no remaining photo was cropped from it.
+ */
+export async function removePhotoFromCopy(copyId: string, photoId: string): Promise<void> {
+  const db = getDb();
+  await db.transaction("rw", [db.copies, db.photos, db.thumbnails, db.settings], async () => {
+    const copy = await db.copies.get(copyId);
+    if (!copy?.photoIds.includes(photoId)) return;
+    const photoIds = copy.photoIds.filter((id) => id !== photoId);
+    const remaining = (await db.photos.bulkGet(photoIds)).filter((r): r is PhotoRecord => !!r).map(photoMetaFromRecord);
+    const coverPhotoId = copy.coverPhotoId === photoId ? pickCover(remaining) : copy.coverPhotoId;
+    await db.copies.update(copyId, { photoIds, coverPhotoId, updatedAt: now() });
+    const usedElsewhere = await db.copies.filter((c) => c.photoIds.includes(photoId)).count();
+    const isSource = (await db.photos.where("sourcePhotoId").equals(photoId).count()) > 0;
+    if (!usedElsewhere && !isSource) {
+      await db.photos.delete(photoId);
+      await db.thumbnails.delete(photoId);
+    }
+    await markChanged();
+  });
+}
+
 export interface CopyFormValues {
   title: string;
   credits: ArtistCredit[];

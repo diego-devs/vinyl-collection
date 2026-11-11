@@ -18,6 +18,7 @@ import {
 import { CopyForm } from "./CopyForm";
 import { CropEditor } from "./CropEditor";
 import { CoverThumb } from "./CoverThumb";
+import { PhotoManager } from "./PhotoManager";
 
 export function ReviewView() {
   const params = useSearchParams();
@@ -147,7 +148,9 @@ export function ReviewView() {
             </section>
           )}
 
-          <CopyForm key={copy.updatedAt} copy={copy} album={album} busy={busy} onSave={save} onChange={setLive} />
+          <CopyForm key={copy.id} copy={copy} album={album} busy={busy} onSave={save} onChange={setLive} />
+
+          <PhotoManager copy={copy} />
         </>
       )}
     </div>
